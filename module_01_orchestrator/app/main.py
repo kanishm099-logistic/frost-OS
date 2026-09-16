@@ -27,6 +27,7 @@ from app.config.settings import Settings, get_settings
 from app.core.decision_manager import DecisionManager
 from app.core.event_router import EventRouter
 from app.core.orchestrator import ModuleClients, Orchestrator
+from app.core.priority_queue import PriorityEventQueue
 from app.core.workflow_engine import WorkflowEngine, workflow_registry
 from app.events.publisher import EventPublisher
 from app.storage.database import create_tables, dispose_engine, init_engine
@@ -136,8 +137,10 @@ async def lifespan(app: FastAPI):
         ws_manager=ws_manager,
     )
 
+    priority_queue = PriorityEventQueue()
+
     # Configure routes with dependencies
-    configure_routes(orchestrator, workflow_engine, ws_manager, settings)
+    configure_routes(orchestrator, workflow_engine, ws_manager, settings, priority_queue=priority_queue)
 
     logger.info("Frost Orchestrator started successfully")
 

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Frost OS — Agentic AI Energy Operating System Dashboard for Polar Research Stations. Real-time monitoring of 8 intelligence modules." />
+  <title>Frost OS — Mission Control Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ── Aurora Background Animation ────────────────────────────────── -->
+  <div class="aurora-bg">
+    <div class="aurora-wave aurora-wave--1"></div>
+    <div class="aurora-wave aurora-wave--2"></div>
+    <div class="aurora-wave aurora-wave--3"></div>
+  </div>
+
+  <!-- ── Particle Field ─────────────────────────────────────────────── -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ── Main App Container ─────────────────────────────────────────── -->
+  <div class="app-container">
+
+    <!-- ── Top Bar ────────────────────────────────────────────────── -->
+    <header class="topbar" id="topbar">
+      <div class="topbar__left">
+        <div class="frost-logo">
+          <div class="frost-logo__icon">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="20" r="18" stroke="url(#logo-grad)" stroke-width="2.5" opacity="0.6"/>
+              <path d="M20 4 L20 36 M4 20 L36 20 M8.5 8.5 L31.5 31.5 M31.5 8.5 L8.5 31.5" stroke="url(#logo-grad)" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="20" cy="20" r="5" fill="url(#logo-grad)" opacity="0.9"/>
+              <defs>
+                <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40">
+                  <stop offset="0%" stop-color="#60A5FA"/>
+                  <stop offset="50%" stop-color="#A78BFA"/>
+                  <stop offset="100%" stop-color="#34D399"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="frost-logo__text">
+            <span class="frost-logo__title">FROST OS</span>
+            <span class="frost-logo__subtitle">Polar Energy Intelligence</span>
+          </div>
+        </div>
+      </div>
+      <div class="topbar__center">
+        <div class="station-badge" id="station-badge">
+          <span class="station-badge__dot"></span>
+          <span class="station-badge__text">STATION ALPHA</span>
+          <span class="station-badge__status" id="station-status-text">INITIALIZING</span>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <div class="system-clock" id="system-clock">--:--:-- UTC</div>
+        <div class="uptime-badge" id="uptime-badge">
+          <span class="uptime-badge__label">UPTIME</span>
+          <span class="uptime-badge__value" id="uptime-value">--</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Summary Metrics Bar ────────────────────────────────────── -->
+    <section class="metrics-bar" id="metrics-bar">
+      <div class="metric-chip" id="chip-modules">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="modules-online">0/8</span>
+          <span class="metric-chip__label">Modules Online</span>
+        </div>
+      </div>
+      <div class="metric-chip" id="chip-safety">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M10 2 L17 7 V12 C17 16 10 18 10 18 C10 18 3 16 3 12 V7 L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="safety-decision">--</span>
+          <span class="metric-chip__label">Safety Status</span>
+        </div>
+      </div>
+      <div class="metric-chip" id="chip-energy">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M11 2 L5 11 H9 L8 18 L15 9 H11 L11 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="energy-balance">-- kW</span>
+          <span class="metric-chip__label">Net Power</span>
+        </div>
+      </div>
+      <div class="metric-chip" id="chip-battery">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="8" width="2" height="4" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="4" y="7" width="5" height="6" rx="1" fill="currentColor" opacity="0.4"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="battery-soc">--%</span>
+          <span class="metric-chip__label">Battery SOC</span>
+        </div>
+      </div>
+      <div class="metric-chip" id="chip-reserve">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6 V10 L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="reserve-kwh">-- kWh</span>
+          <span class="metric-chip__label">Protected Reserve</span>
+        </div>
+      </div>
+      <div class="metric-chip" id="chip-temp">
+        <div class="metric-chip__icon">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M10 2 V13 M7 13 A3 3 0 1 0 13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="15" r="1" fill="currentColor"/></svg>
+        </div>
+        <div class="metric-chip__data">
+          <span class="metric-chip__value" id="ambient-temp">--°C</span>
+          <span class="metric-chip__label">Ambient Temp</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Module Grid ────────────────────────────────────────────── -->
+    <section class="module-grid" id="module-grid">
+      <!-- Module cards are dynamically generated by JS -->
+    </section>
+
+    <!-- ── Priority-Based Process & Load Management ──────────────── -->
+    <section class="priority-panel" id="priority-panel">
+      <div class="priority-panel__header">
+        <div class="priority-panel__title-group">
+          <h2 class="priority-panel__title">
+            <svg viewBox="0 0 24 24" fill="none" class="priority-panel__icon">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Priority-Based Process & Load Shedding Engine
+          </h2>
+          <p class="priority-panel__subtitle">
+            Deterministic lexicographic dispatch: <strong>P0 Life Support</strong> &gt; <strong>P1 Essential Science</strong> &gt; <strong>P2 Deferred Experiments</strong> &gt; <strong>P3 Station Comfort</strong>
+          </p>
+        </div>
+        <div class="priority-panel__status-badge" id="priority-safety-verdict">
+          <span class="pulse-dot pulse-dot--emerald"></span>
+          <span id="priority-safety-text">P0 LIFE SUPPORT 100% PROTECTED</span>
+        </div>
+      </div>
+
+      <!-- Priority Simulation Controls -->
+      <div class="priority-controls">
+        <div class="priority-controls__presets">
+          <span class="priority-controls__label">Simulate Generation Deficit:</span>
+          <button class="btn btn--preset active" data-deficit="0" onclick="simulatePriorityDeficit(0)">Normal (0 kW)</button>
+          <button class="btn btn--preset" data-deficit="20" onclick="simulatePriorityDeficit(20)">Minor (-20 kW · Shed P3)</button>
+          <button class="btn btn--preset" data-deficit="55" onclick="simulatePriorityDeficit(55)">Moderate (-55 kW · Shed P3 &amp; P2)</button>
+          <button class="btn btn--preset btn--danger-preset" data-deficit="100" onclick="simulatePriorityDeficit(100)">Severe (-100 kW · Battery Safeguard)</button>
+        </div>
+        <div class="priority-controls__slider-group">
+          <label for="deficit-slider" class="priority-controls__slider-label">
+            Custom Deficit: <span id="deficit-slider-val" class="text-accent">0 kW</span>
+          </label>
+          <input type="range" id="deficit-slider" min="0" max="120" value="0" step="5" oninput="onDeficitSliderChange(this.value)" />
+        </div>
+      </div>
+
+      <!-- Live Priority Summary Row -->
+      <div class="priority-summary-row">
+        <div class="priority-stat">
+          <span class="priority-stat__label">Nominal Demand</span>
+          <span class="priority-stat__value" id="p-nominal-demand">190.0 kW</span>
+        </div>
+        <div class="priority-stat">
+          <span class="priority-stat__label">Allocated Power</span>
+          <span class="priority-stat__value text-emerald" id="p-allocated-power">190.0 kW</span>
+        </div>
+        <div class="priority-stat">
+          <span class="priority-stat__label">Current Deficit</span>
+          <span class="priority-stat__value text-rose" id="p-current-deficit">0.0 kW</span>
+        </div>
+        <div class="priority-stat">
+          <span class="priority-stat__label">Total Shed Power</span>
+          <span class="priority-stat__value text-amber" id="p-total-shed">0.0 kW</span>
+        </div>
+        <div class="priority-stat">
+          <span class="priority-stat__label">Battery Support</span>
+          <span class="priority-stat__value text-cyan" id="p-battery-support">0.0 kW</span>
+        </div>
+      </div>
+
+      <!-- Priority Process Cards Grid -->
+      <div class="priority-cards-grid" id="priority-cards-grid">
+        <!-- Dynamically rendered by dashboard.js -->
+      </div>
+
+      <!-- Priority Action Chain Feed -->
+      <div class="priority-actions-feed" id="priority-actions-feed">
+        <div class="priority-actions-feed__header">
+          <svg viewBox="0 0 20 20" fill="none" class="icon-sm"><path d="M4 4H16V16H4V4Z" stroke="currentColor" stroke-width="1.5"/><path d="M4 9H16" stroke="currentColor" stroke-width="1.5"/><path d="M9 4V16" stroke="currentColor" stroke-width="1.5"/></svg>
+          Active Priority-Ordered Action Sequence
+        </div>
+        <div class="priority-actions-feed__list" id="priority-actions-list">
+          <div class="priority-action-empty">System operating at equilibrium. All priority processes 100% satisfied.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Pipeline Execution Panel ──────────────────────────────── -->
+    <section class="pipeline-panel" id="pipeline-panel">
+      <div class="pipeline-panel__header">
+        <h2 class="pipeline-panel__title">
+          <svg viewBox="0 0 20 20" fill="none" class="pipeline-panel__icon"><path d="M2 10 H5 L7 4 L10 16 L13 7 L15 10 H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Pipeline Execution
+        </h2>
+        <div class="pipeline-panel__controls">
+          <button class="btn btn--primary" id="btn-run-pipeline" onclick="runPipeline()">
+            <svg viewBox="0 0 20 20" fill="none"><polygon points="5,3 17,10 5,17" fill="currentColor"/></svg>
+            Execute Full Pipeline
+          </button>
+          <button class="btn btn--secondary" id="btn-clear-log" onclick="clearLog()">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 6 H16 M7 6 V16 C7 17 8 18 9 18 H11 C12 18 13 17 13 16 V6 M8 3 H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Clear
+          </button>
+        </div>
+      </div>
+      <div class="pipeline-panel__progress">
+        <div class="pipeline-steps" id="pipeline-steps">
+          <div class="pipeline-step" data-step="1"><span class="pipeline-step__num">1</span><span class="pipeline-step__label">M03</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="2"><span class="pipeline-step__num">2</span><span class="pipeline-step__label">M04</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="3"><span class="pipeline-step__num">3</span><span class="pipeline-step__label">M02</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="4"><span class="pipeline-step__num">4</span><span class="pipeline-step__label">M05</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="5"><span class="pipeline-step__num">5</span><span class="pipeline-step__label">M06</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="6"><span class="pipeline-step__num">6</span><span class="pipeline-step__label">M07</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="7"><span class="pipeline-step__num">7</span><span class="pipeline-step__label">M01</span></div>
+          <div class="pipeline-connector"></div>
+          <div class="pipeline-step" data-step="8"><span class="pipeline-step__num">8</span><span class="pipeline-step__label">M08</span></div>
+        </div>
+      </div>
+      <div class="pipeline-panel__log-container">
+        <div class="pipeline-log" id="pipeline-log">
+          <div class="pipeline-log__placeholder">
+            <svg viewBox="0 0 24 24" fill="none" class="pipeline-log__placeholder-icon"><path d="M13 2 L3 14 H12 L11 22 L21 10 H12 L13 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            <p>Click <strong>Execute Full Pipeline</strong> to run the 8-module integration flow</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Desired vs Actual Verification Matrix ─────────────────── -->
+    <section class="verification-panel" id="verification-panel" style="display:none;">
+      <div class="verification-panel__header">
+        <h2 class="verification-panel__title">
+          <svg viewBox="0 0 20 20" fill="none" class="verification-panel__icon"><path d="M7 10 L9 12 L13 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/></svg>
+          Desired vs Actual Output Verification Matrix
+        </h2>
+      </div>
+      <div class="verification-table-wrap">
+        <table class="verification-table" id="verification-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Desired Output</th>
+              <th>Actual System Output</th>
+              <th>Verification</th>
+            </tr>
+          </thead>
+          <tbody id="verification-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Module Detail Modal ───────────────────────────────────── -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+      <div class="modal" id="modal" onclick="event.stopPropagation()">
+        <button class="modal__close" onclick="closeModal()" aria-label="Close modal">&times;</button>
+        <div class="modal__header" id="modal-header"></div>
+        <div class="modal__body" id="modal-body"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

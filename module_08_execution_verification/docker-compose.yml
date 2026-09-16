@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  module_08_execution_verification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frost_module_08_execution_verification
+    ports:
+      - "8008:8008"
+    environment:
+      - STATION_ID=POLAR-STATION-ALPHA
+      - PORT=8008
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite+aiosqlite:///./module_08.db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: frost_redis_m08
+    ports:
+      - "6379:6379"

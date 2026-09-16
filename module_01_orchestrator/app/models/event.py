@@ -52,6 +52,14 @@ class Severity(str, enum.Enum):
     CRITICAL = "CRITICAL"
 
 
+SEVERITY_PRIORITY: dict[Severity, int] = {
+    Severity.CRITICAL: 0,
+    Severity.HIGH: 1,
+    Severity.MEDIUM: 2,
+    Severity.LOW: 3,
+}
+
+
 # ── Pydantic Domain Model ────────────────────────────────────────────
 
 class StationEvent(BaseModel):
@@ -121,6 +129,18 @@ class StationEvent(BaseModel):
         if not stripped:
             raise ValueError("Source must be a non-empty identifier")
         return stripped
+
+    @property
+    def priority_score(self) -> int:
+        """Lower integer = higher priority (CRITICAL=0, HIGH=1, MEDIUM=2, LOW=3)."""
+        return SEVERITY_PRIORITY.get(self.severity, 2)
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, StationEvent):
+            return NotImplemented
+        if self.priority_score != other.priority_score:
+            return self.priority_score < other.priority_score
+        return self.timestamp < other.timestamp
 
 
 # ── SQLAlchemy ORM Model ──────────────────────────────────────────────

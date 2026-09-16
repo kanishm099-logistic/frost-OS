@@ -75,6 +75,10 @@ class WorkflowEngine:
     def __init__(self, registry: WorkflowRegistry) -> None:
         self._registry = registry
 
+    def list_workflows(self) -> list[str]:
+        """Return all registered workflow names."""
+        return self._registry.list_workflows()
+
     async def execute(
         self,
         workflow_name: str,

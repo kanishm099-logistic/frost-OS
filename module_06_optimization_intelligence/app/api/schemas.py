@@ -49,3 +49,37 @@ class ValidationHTTPResponse(BaseModel):
     is_valid: bool
     violation_count: int
     violations: List[Dict[str, Any]]
+
+
+class ActionItem(BaseModel):
+    """Action item recommendation for Module 01 Orchestrator decision plan."""
+    action_type: str
+    target: str
+    description: str
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    priority: int = 1
+    estimated_impact_kwh: float = 0.0
+    reversible: bool = True
+
+
+class M01OptimizationResult(BaseModel):
+    """Optimization result payload for M01 Orchestrator."""
+    strategy: str
+    actions: List[ActionItem] = Field(default_factory=list)
+    projected_balance_kw: float = 0.0
+    projected_reserve_kwh: float = 0.0
+    confidence: float = 0.85
+
+
+class M01OptimizeResponseData(BaseModel):
+    """Data envelope for M01 Orchestrator optimizer response."""
+    station_id: str
+    optimization_result: M01OptimizationResult
+
+
+class M01ModuleResponse(BaseModel):
+    """Full ModuleResponse envelope for M01 Orchestrator."""
+    status: str = "success"
+    module_name: str = "optimizer"
+    data: M01OptimizeResponseData
+

@@ -116,6 +116,89 @@ async def system_status(
     )
 
 
+@router.get("/missions/processes/priority-state", tags=["Priority Process"])
+async def get_priority_processes(station_id: str = Query(default="FROST-STATION-ALPHA")):
+    """
+    Retrieve live status of priority-governed station processes and loads.
+    Enforces deterministic priority tiers:
+    P0 Life Support > P1 Essential Science > P2 Deferred Experiments > P3 Comfort Loads.
+    """
+    processes = [
+        {
+            "process_id": "PROC-P0-LIFE-SUPPORT",
+            "name": "Life Support & Environmental Habitat",
+            "tier": "P0",
+            "priority_level": 0,
+            "category": "SURVIVAL",
+            "min_power_kw": 45.0,
+            "current_power_kw": 45.0,
+            "status": "PROTECTED",
+            "sheddable": False,
+            "flexibility": "INFLEXIBLE",
+            "criticality": "VITAL",
+            "sla_requirement": "100% uptime, zero interruption allowed",
+            "description": "Station oxygen generation, atmospheric pressure, and quarters survival heating",
+        },
+        {
+            "process_id": "PROC-P1-ESSENTIAL-SCIENCE",
+            "name": "Atmospheric Radar & Ice Core Sampler",
+            "tier": "P1",
+            "priority_level": 1,
+            "category": "CRITICAL_SCIENCE",
+            "min_power_kw": 90.0,
+            "current_power_kw": 90.0,
+            "status": "ACTIVE",
+            "sheddable": False,
+            "flexibility": "PARTIALLY_FLEXIBLE",
+            "criticality": "HIGH",
+            "sla_requirement": "Protected under normal & advisory states",
+            "description": "Continuous high-resolution polar radar sweep & deep cryogenic sample freezer",
+        },
+        {
+            "process_id": "PROC-P2-DEFERRED-RESEARCH",
+            "name": "Secondary Thermal Sensors & Drone Charging",
+            "tier": "P2",
+            "priority_level": 2,
+            "category": "DEFERRED_SCIENCE",
+            "min_power_kw": 35.0,
+            "current_power_kw": 35.0,
+            "status": "ACTIVE",
+            "sheddable": True,
+            "flexibility": "FLEXIBLE",
+            "criticality": "MEDIUM",
+            "sla_requirement": "Can be paused/deferred during deficit > 20 kW",
+            "description": "Meteorological balloon telemetry receiver and survey drone recharging docks",
+        },
+        {
+            "process_id": "PROC-P3-STATION-COMFORT",
+            "name": "Quarters Comfort HVAC & Auxiliary Amenities",
+            "tier": "P3",
+            "priority_level": 3,
+            "category": "COMFORT",
+            "min_power_kw": 20.0,
+            "current_power_kw": 20.0,
+            "status": "ACTIVE",
+            "sheddable": True,
+            "flexibility": "DEFERRABLE",
+            "criticality": "LOW",
+            "sla_requirement": "First tier sheddable on any deficit",
+            "description": "Non-essential gym, recreation facility heating, and aesthetic lighting",
+        },
+    ]
+    total_demand_kw = sum(p["current_power_kw"] for p in processes)
+    vital_demand_kw = sum(p["current_power_kw"] for p in processes if not p["sheddable"])
+    sheddable_demand_kw = sum(p["current_power_kw"] for p in processes if p["sheddable"])
+
+    return {
+        "station_id": station_id,
+        "total_demand_kw": total_demand_kw,
+        "vital_demand_kw": vital_demand_kw,
+        "sheddable_demand_kw": sheddable_demand_kw,
+        "priority_tiers": ["P0", "P1", "P2", "P3"],
+        "processes": processes,
+    }
+
+
 # ── CRUD Endpoints ────────────────────────────────────────────────────
 
 @router.post("/missions", response_model=MissionResponse, status_code=status.HTTP_201_CREATED, tags=["Missions"])

@@ -50,16 +50,18 @@ _orchestrator = None
 _workflow_engine = None
 _ws_manager = None
 _settings = None
+_priority_queue = None
 _start_time = time.monotonic()
 
 
-def configure_routes(orchestrator, workflow_engine, ws_manager, settings):
+def configure_routes(orchestrator, workflow_engine, ws_manager, settings, priority_queue=None):
     """Configure route dependencies (called during app startup)."""
-    global _orchestrator, _workflow_engine, _ws_manager, _settings
+    global _orchestrator, _workflow_engine, _ws_manager, _settings, _priority_queue
     _orchestrator = orchestrator
     _workflow_engine = workflow_engine
     _ws_manager = ws_manager
     _settings = settings
+    _priority_queue = priority_queue
 
 
 # ── WebSocket Manager ─────────────────────────────────────────────────
@@ -219,6 +221,9 @@ async def ingest_event(
         workflow_repo=workflow_repo,
     )
 
+    if _priority_queue:
+        _priority_queue.record_processed_event(event, result)
+
     return PipelineResponse(
         decision_id=result["decision_id"],
         plan_id=result.get("plan_id"),
@@ -226,6 +231,21 @@ async def ingest_event(
         requires_authorization=result.get("requires_authorization", False),
         error=result.get("error"),
     )
+
+
+@router.get("/orchestrator/priority-queue", tags=["Priority Process"])
+async def get_priority_queue_status():
+    """Retrieve current priority-based event queue status, metrics, and backlog preview."""
+    if _priority_queue:
+        return _priority_queue.get_status()
+    return {
+        "queue_depth": 0,
+        "counts_by_severity": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
+        "currently_processing": None,
+        "queued_events_preview": [],
+        "total_processed": 0,
+        "recent_processed": [],
+    }
 
 
 @router.get("/orchestrator/events/{event_id}", response_model=EventResponse, tags=["Events"])

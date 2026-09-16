@@ -115,9 +115,20 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # CORS — allow dashboard and inter-service requests
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.include_router(router, prefix="/api/v1")
 
     return app
+
 
 
 def _register_demo_equipment(engine: DiagnosticEngine, settings) -> None:
