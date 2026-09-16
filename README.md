@@ -40,6 +40,7 @@ Frost OS is organized into specialized, loosely coupled microservices communicat
 | **Module 03** | **Energy Intelligence** | Power flow optimization, battery cycling, hydrogen dispatch, reserve management | `8003` |
 | **Module 04** | **Forecast Intelligence** | Numerical weather prediction ingestion, renewable generation & polar load forecasting | `8004` |
 | **Module 05** | **Diagnostic Intelligence** | Equipment telemetry quality control, anomaly detection, SOH/RUL degradation & failure risk | `8005` |
+| **Module 06** | **Optimization Intelligence** | Mathematical decision engine formulating MILP models for microgrid dispatch, candidate ranking & trade-off analysis | `8006` |
 
 ---
 
@@ -63,9 +64,10 @@ Frost OS is organized into specialized, loosely coupled microservices communicat
 Navigate to any module directory to run tests or start the service:
 
 ```bash
-# Example: Module 05 Diagnostic Intelligence
-cd module_05_diagnostic_intelligence
+# Example: Module 06 Optimization Intelligence
+cd module_06_optimization_intelligence
 pip install -r requirements.txt
 pytest tests/ -v
-uvicorn app.main:app --port 8005 --reload
+uvicorn app.main:app --port 8006 --reload
 ```
+

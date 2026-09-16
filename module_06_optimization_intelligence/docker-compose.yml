@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  module_06_optimization_intelligence:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frost_module_06_optimization
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - ENVIRONMENT=production
+      - MOCK_MODE=true
+      - DATABASE_URL=sqlite+aiosqlite:///./module_06.db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: frost_module_06_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+networks:
+  default:
+    name: frost_net
