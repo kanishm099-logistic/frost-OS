@@ -1,0 +1,38 @@
+services:
+  module_04_forecast_intelligence:
+    build: .
+    container_name: frost_module_04_forecast
+    ports:
+      - "8004:8004"
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+asyncpg://frost:polar_secure_pass@timescaledb_m04:5432/frost_forecast
+      - REDIS_URL=redis://redis_m04:6379/0
+      - STATION_ID=polar-station-alpha
+    depends_on:
+      - timescaledb_m04
+      - redis_m04
+    restart: unless-stopped
+
+  timescaledb_m04:
+    image: timescale/timescaledb:latest-pg16
+    container_name: frost_timescaledb_m04
+    environment:
+      - POSTGRES_USER=frost
+      - POSTGRES_PASSWORD=polar_secure_pass
+      - POSTGRES_DB=frost_forecast
+    ports:
+      - "5434:5432"
+    volumes:
+      - timescaledb_m04_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis_m04:
+    image: redis:7.4-alpine
+    container_name: frost_redis_m04
+    ports:
+      - "6382:6379"
+    restart: unless-stopped
+
+volumes:
+  timescaledb_m04_data:

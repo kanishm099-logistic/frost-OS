@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  orchestrator:
+    build: .
+    container_name: frost-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - FROST_DATABASE_URL=postgresql+asyncpg://frost:frost_secret@postgres:5432/frost_orchestrator
+      - FROST_REDIS_URL=redis://redis:6379/0
+      - FROST_MOCK_MODE=true
+      - FROST_LOG_LEVEL=DEBUG
+      - FROST_JWT_SECRET=dev-secret-change-in-production
+      - FROST_STATION_ID=FROST-STATION-ALPHA
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: frost-postgres
+    environment:
+      POSTGRES_USER: frost
+      POSTGRES_PASSWORD: frost_secret
+      POSTGRES_DB: frost_orchestrator
+    ports:
+      - "5432:5432"
+    volumes:
+      - frost_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frost -d frost_orchestrator"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: frost-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - frost_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  frost_pgdata:
+  frost_redisdata:
