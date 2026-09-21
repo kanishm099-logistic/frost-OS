@@ -88,4 +88,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from pathlib import Path
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
 app.include_router(router)
+
+# Mount Dashboard static files directly from the repository
+dashboard_dir = Path(__file__).resolve().parent.parent.parent / "dashboard"
+if dashboard_dir.exists():
+    app.mount("/dashboard", StaticFiles(directory=str(dashboard_dir), html=True), name="dashboard")
+
+    @app.get("/", include_in_schema=False)
+    async def root_to_dashboard():
+        """Redirect root URL directly to the mission control dashboard."""
+        return RedirectResponse(url="/dashboard/")
+

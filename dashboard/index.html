@@ -22,7 +22,123 @@
   <canvas id="particle-canvas"></canvas>
 
   <!-- ── Main App Container ─────────────────────────────────────────── -->
-  <div class="app-container">
+  <!-- ── Polar Station Authentication Gateway ────────────────────────── -->
+  <div class="station-gateway" id="station-gateway">
+    <div class="station-gateway__dialog">
+      <div class="station-gateway__header">
+        <div class="station-gateway__logo">
+          <svg viewBox="0 0 48 48" fill="none" class="station-gateway__logo-svg">
+            <circle cx="24" cy="24" r="22" stroke="url(#gw-logo-grad)" stroke-width="2.5" opacity="0.8"/>
+            <path d="M24 6 L24 42 M6 24 L42 24 M11 11 L37 37 M37 11 L11 37" stroke="url(#gw-logo-grad)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="24" cy="24" r="6" fill="url(#gw-logo-grad)"/>
+            <defs>
+              <linearGradient id="gw-logo-grad" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="50%" stop-color="#818CF8"/>
+                <stop offset="100%" stop-color="#34D399"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="station-gateway__title">FROST OS POLAR GATEWAY</h1>
+        <p class="station-gateway__subtitle">Select Polar Research Station &amp; Authenticate Terminal Session</p>
+      </div>
+
+      <!-- Station Selector Cards Grid -->
+      <div class="station-cards-grid" id="station-cards-grid">
+        <!-- Station cards generated dynamically or static selector -->
+        <div class="station-pick-card active" data-station-id="POLAR-STATION-ALPHA" onclick="selectGatewayStation('POLAR-STATION-ALPHA')">
+          <div class="station-pick-card__top">
+            <span class="station-pick-card__name">Station Alpha</span>
+            <span class="station-pick-card__badge badge-coastal">COASTAL</span>
+          </div>
+          <div class="station-pick-card__loc">McMurdo Sector · 77°51'S 166°40'E</div>
+          <div class="station-pick-card__specs">
+            <span>🌬️ 120kW Wind</span>
+            <span>☀️ 85kW Solar</span>
+            <span>🔋 600kWh BESS</span>
+          </div>
+          <div class="station-pick-card__temp">-25.0°C · 32 kt Wind</div>
+        </div>
+
+        <div class="station-pick-card" data-station-id="POLAR-STATION-BETA" onclick="selectGatewayStation('POLAR-STATION-BETA')">
+          <div class="station-pick-card__top">
+            <span class="station-pick-card__name">Station Beta</span>
+            <span class="station-pick-card__badge badge-plateau">DOME C</span>
+          </div>
+          <div class="station-pick-card__loc">Deep Ice Sheet · 75°06'S 123°20'E</div>
+          <div class="station-pick-card__specs">
+            <span>☀️ 140kW Solar</span>
+            <span>💧 400Bar H₂</span>
+            <span>🔋 800kWh BESS</span>
+          </div>
+          <div class="station-pick-card__temp">-65.0°C · Deep Freeze</div>
+        </div>
+
+        <div class="station-pick-card" data-station-id="POLAR-STATION-GAMMA" onclick="selectGatewayStation('POLAR-STATION-GAMMA')">
+          <div class="station-pick-card__top">
+            <span class="station-pick-card__name">Station Gamma</span>
+            <span class="station-pick-card__badge badge-arctic">HIGH ARCTIC</span>
+          </div>
+          <div class="station-pick-card__loc">Svalbard Outpost · 78°13'N 15°38'E</div>
+          <div class="station-pick-card__specs">
+            <span>🌬️ 160kW Wind</span>
+            <span>🌑 Polar Night</span>
+            <span>🔋 500kWh BESS</span>
+          </div>
+          <div class="station-pick-card__temp">-18.0°C · Fjord Storm</div>
+        </div>
+
+        <div class="station-pick-card" data-station-id="POLAR-STATION-DELTA" onclick="selectGatewayStation('POLAR-STATION-DELTA')">
+          <div class="station-pick-card__top">
+            <span class="station-pick-card__name">Station Delta</span>
+            <span class="station-pick-card__badge badge-pole">SOUTH POLE</span>
+          </div>
+          <div class="station-pick-card__loc">Amundsen-Scott · 90°00'S 0°00'E</div>
+          <div class="station-pick-card__specs">
+            <span>📡 P1 Deep Radar</span>
+            <span>☀️ 90kW Solar</span>
+            <span>🔋 750kWh BESS</span>
+          </div>
+          <div class="station-pick-card__temp">-52.0°C · 2,835m Alt</div>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form class="station-gateway__form" id="station-gateway-form" onsubmit="handleGatewayLogin(event)">
+        <div class="gateway-input-group">
+          <label for="gw-station-id" class="gateway-label">Target Polar Station</label>
+          <input type="text" id="gw-station-id" class="gateway-input" value="POLAR-STATION-ALPHA" readonly />
+        </div>
+
+        <div class="gateway-input-group">
+          <div class="gateway-label-row">
+            <label for="gw-password" class="gateway-label">Station Security Access Key</label>
+            <button type="button" class="gateway-hint-btn" onclick="autofillCurrentStationKey()">Autofill Default Key</button>
+          </div>
+          <div class="gateway-password-wrap">
+            <input type="password" id="gw-password" class="gateway-input" placeholder="Enter station access password..." required />
+            <button type="button" class="gateway-pwd-toggle" onclick="toggleGatewayPasswordVisibility()" aria-label="Toggle password visibility">
+              <span id="pwd-toggle-icon">👁️</span>
+            </button>
+          </div>
+          <div class="gateway-password-hint" id="gateway-password-hint">
+            Default Key: <code id="hint-key-code">frost-alpha-2026</code>
+          </div>
+        </div>
+
+        <div class="gateway-error-msg" id="gateway-error-msg" style="display: none;"></div>
+
+        <button type="submit" class="btn btn--primary gateway-submit-btn" id="btn-gateway-submit">
+          <svg viewBox="0 0 20 20" fill="none" class="icon-sm"><path d="M10 2L17 7V12C17 16 10 18 10 18C10 18 3 16 3 12V7L10 2Z" stroke="currentColor" stroke-width="1.5"/><path d="M7 10L9 12L13 8" stroke="currentColor" stroke-width="1.5"/></svg>
+          AUTHENTICATE &amp; ENTER MISSION CONTROL
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Main App Container ─────────────────────────────────────────── -->
+  <div class="app-container" id="main-app-container">
 
     <!-- ── Top Bar ────────────────────────────────────────────────── -->
     <header class="topbar" id="topbar">
@@ -49,13 +165,18 @@
         </div>
       </div>
       <div class="topbar__center">
-        <div class="station-badge" id="station-badge">
+        <div class="station-badge" id="station-badge" onclick="openStationGateway()" title="Click to switch polar station">
           <span class="station-badge__dot"></span>
-          <span class="station-badge__text">STATION ALPHA</span>
-          <span class="station-badge__status" id="station-status-text">INITIALIZING</span>
+          <span class="station-badge__text" id="topbar-station-name">STATION ALPHA</span>
+          <span class="station-badge__coords" id="topbar-station-coords">77°51'S 166°40'E</span>
+          <span class="station-badge__status" id="station-status-text">ONLINE</span>
         </div>
       </div>
       <div class="topbar__right">
+        <button class="btn btn--station-switch" id="btn-switch-station" onclick="openStationGateway()" title="Switch to another Polar Station">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M4 7H16M16 7L12 3M16 7L12 11M16 13H4M4 13L8 9M4 13L8 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Switch Station
+        </button>
         <div class="system-clock" id="system-clock">--:--:-- UTC</div>
         <div class="uptime-badge" id="uptime-badge">
           <span class="uptime-badge__label">UPTIME</span>
@@ -118,6 +239,286 @@
         <div class="metric-chip__data">
           <span class="metric-chip__value" id="ambient-temp">--°C</span>
           <span class="metric-chip__label">Ambient Temp</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Interactive Microgrid Power Flow Diagram ──────────────── -->
+    <section class="powerflow-panel" id="powerflow-panel">
+      <div class="powerflow-panel__header">
+        <div class="powerflow-panel__title-group">
+          <h2 class="powerflow-panel__title">
+            <svg viewBox="0 0 24 24" fill="none" class="powerflow-panel__icon">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 3V21M3 12H21" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              <path d="M16 8L8 16" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Microgrid Dynamic Power Flow Topology
+          </h2>
+          <p class="powerflow-panel__subtitle">
+            Autonomous multi-source power routing across polar generation, energy storage, and mission priority sinks.
+          </p>
+        </div>
+        <div class="powerflow-panel__badges">
+          <div class="flow-badge flow-badge--bus" id="flow-bus-status">
+            <span class="pulse-dot pulse-dot--cyan"></span>
+            <span id="flow-bus-freq">AC BUS: 50.0 Hz · 400V</span>
+          </div>
+          <div class="flow-badge flow-badge--balance" id="flow-balance-badge">
+            <span id="flow-net-balance">+60.0 kW (SURPLUS)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Power Flow Interactive Diagram Stage -->
+      <div class="flow-stage" id="flow-stage">
+        <svg class="flow-svg-canvas" id="flow-svg-canvas" preserveAspectRatio="none" viewBox="0 0 1000 480">
+          <defs>
+            <linearGradient id="flow-grad-wind" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#818cf8"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-solar" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#fbbf24"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-diesel" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f87171"/>
+              <stop offset="100%" stop-color="#fb923c"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-battery" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#34d399"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-h2" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#60a5fa"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-p0" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#10b981"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-p1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#f59e0b"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-p2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#fb7185"/>
+            </linearGradient>
+            <linearGradient id="flow-grad-p3" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#94a3b8"/>
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- SVG Paths Connecting Nodes to Central Bus (Center at 500, 180) -->
+          <!-- Source Connectors -->
+          <path id="path-wind" class="flow-line flow-line--active" d="M 220 70 C 350 70, 380 180, 480 180" />
+          <path id="path-solar" class="flow-line flow-line--active" d="M 220 180 L 480 180" />
+          <path id="path-diesel" class="flow-line flow-line--idle" d="M 220 290 C 350 290, 380 180, 480 180" />
+
+          <!-- Storage Connectors -->
+          <path id="path-battery" class="flow-line flow-line--active flow-line--bidirectional" d="M 430 400 C 430 280, 480 220, 490 200" />
+          <path id="path-h2" class="flow-line flow-line--active" d="M 570 400 C 570 280, 520 220, 510 200" />
+
+          <!-- Demand Sinks Connectors -->
+          <path id="path-p0" class="flow-line flow-line--active" d="M 520 180 C 620 180, 680 70, 780 70" />
+          <path id="path-p1" class="flow-line flow-line--active" d="M 520 180 C 630 180, 680 150, 780 150" />
+          <path id="path-p2" class="flow-line flow-line--active" d="M 520 180 C 630 180, 680 230, 780 230" />
+          <path id="path-p3" class="flow-line flow-line--active" d="M 520 180 C 620 180, 680 310, 780 310" />
+        </svg>
+
+        <!-- HTML Node Cards Overlaid in Grid Positions -->
+        <div class="flow-nodes-container">
+          
+          <!-- Column 1: Power Sources -->
+          <div class="flow-col flow-col--sources">
+            <div class="flow-group-label">RENEWABLE GENERATION &amp; AUX</div>
+            
+            <div class="flow-node flow-node--source" id="node-wind" onclick="inspectFlowNode('wind')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🌬️</span>
+                <span class="flow-node__title">Wind Turbines</span>
+                <span class="flow-node__state-badge badge-active" id="wind-state-badge">NOMINAL</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-cyan" id="node-wind-kw">110.0 kW</span>
+                  <span class="flow-node__unit">Active Power</span>
+                </div>
+                <div class="flow-node__meta" id="node-wind-meta">Rotor: 42 RPM · Icing: LOW</div>
+              </div>
+            </div>
+
+            <div class="flow-node flow-node--source" id="node-solar" onclick="inspectFlowNode('solar')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">☀️</span>
+                <span class="flow-node__title">Solar PV Array</span>
+                <span class="flow-node__state-badge badge-active" id="solar-state-badge">ONLINE</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-amber" id="node-solar-kw">85.0 kW</span>
+                  <span class="flow-node__unit">Active Power</span>
+                </div>
+                <div class="flow-node__meta" id="node-solar-meta">Irradiance: 680 W/m² · Clean</div>
+              </div>
+            </div>
+
+            <div class="flow-node flow-node--source flow-node--standby" id="node-diesel" onclick="inspectFlowNode('diesel')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🛢️</span>
+                <span class="flow-node__title">Aux Diesel Gen</span>
+                <span class="flow-node__state-badge badge-standby" id="diesel-state-badge">STANDBY</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-slate" id="node-diesel-kw">0.0 kW</span>
+                  <span class="flow-node__unit">Fuel Burn: 0 L/h</span>
+                </div>
+                <div class="flow-node__meta" id="node-diesel-meta">Auto-Start: Ready (Cold Buffer)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Central Distribution Bus & Storage -->
+          <div class="flow-col flow-col--bus">
+            <div class="flow-group-label">MICROGRID DISTRIBUTION BUS</div>
+            
+            <div class="flow-bus-node" id="node-bus" onclick="inspectFlowNode('bus')">
+              <div class="flow-bus-node__glow"></div>
+              <div class="flow-bus-node__inner">
+                <div class="flow-bus-node__icon">⚡</div>
+                <div class="flow-bus-node__title">AC/DC Microgrid Bus</div>
+                <div class="flow-bus-node__kw" id="bus-total-throughput">195.0 kW</div>
+                <div class="flow-bus-node__subtitle" id="bus-flow-status">Total Bus Flow</div>
+                <div class="flow-bus-node__grid-metrics">
+                  <span>THD: 1.2%</span>
+                  <span>cos φ: 0.99</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Storage Hub Below Bus -->
+            <div class="flow-storage-row">
+              <div class="flow-node flow-node--storage" id="node-battery" onclick="inspectFlowNode('battery')">
+                <div class="flow-node__header">
+                  <span class="flow-node__icon">🔋</span>
+                  <span class="flow-node__title">BESS Battery</span>
+                  <span class="flow-node__state-badge badge-active" id="battery-state-badge">CHARGING</span>
+                </div>
+                <div class="flow-node__body">
+                  <div class="flow-node__metric">
+                    <span class="flow-node__val text-emerald" id="node-battery-kw">+25.0 kW</span>
+                    <span class="flow-node__unit">SOC: <strong id="node-battery-soc">65.0%</strong></span>
+                  </div>
+                  <div class="battery-meter-mini">
+                    <div class="battery-meter-mini__bar" id="node-battery-meter" style="width: 65%;"></div>
+                  </div>
+                  <div class="flow-node__meta" id="node-battery-meta">Cell Temp: 18.5°C · SOH: 98%</div>
+                </div>
+              </div>
+
+              <div class="flow-node flow-node--storage" id="node-h2" onclick="inspectFlowNode('h2')">
+                <div class="flow-node__header">
+                  <span class="flow-node__icon">💧</span>
+                  <span class="flow-node__title">H₂ Fuel Cell</span>
+                  <span class="flow-node__state-badge badge-standby" id="h2-state-badge">STANDBY</span>
+                </div>
+                <div class="flow-node__body">
+                  <div class="flow-node__metric">
+                    <span class="flow-node__val text-purple" id="node-h2-kw">0.0 kW</span>
+                    <span class="flow-node__unit">280 Bar</span>
+                  </div>
+                  <div class="flow-node__meta" id="node-h2-meta">Electrolyzer: Ready · Pure H₂</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 3: Priority Demand Sinks -->
+          <div class="flow-col flow-col--sinks">
+            <div class="flow-group-label">PRIORITY CONSUMPTION LOADS</div>
+
+            <div class="flow-node flow-node--sink flow-node--p0" id="node-sink-p0" onclick="inspectFlowNode('p0')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🔴</span>
+                <div class="flow-node__title-wrap">
+                  <span class="flow-node__title">P0: Life Support</span>
+                  <span class="flow-node__tag">NON-SHEDDABLE</span>
+                </div>
+                <span class="flow-node__state-badge badge-vital" id="p0-state-badge">100% SECURE</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-emerald" id="node-p0-kw">45.0 kW</span>
+                  <span class="flow-node__unit">Nominal 45 kW</span>
+                </div>
+                <div class="flow-node__meta" id="node-p0-meta">Life Support: 100% Locked · 0% Tol.</div>
+              </div>
+            </div>
+
+            <div class="flow-node flow-node--sink flow-node--p1" id="node-sink-p1" onclick="inspectFlowNode('p1')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🟠</span>
+                <div class="flow-node__title-wrap">
+                  <span class="flow-node__title">P1: Core Science</span>
+                  <span class="flow-node__tag">PROTECTED</span>
+                </div>
+                <span class="flow-node__state-badge badge-vital" id="p1-state-badge">PROTECTED</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-emerald" id="node-p1-kw">90.0 kW</span>
+                  <span class="flow-node__unit">Nominal 90 kW</span>
+                </div>
+                <div class="flow-node__meta" id="node-p1-meta">Cryo-Drilling: 78.5% Complete</div>
+              </div>
+            </div>
+
+            <div class="flow-node flow-node--sink flow-node--p2" id="node-sink-p2" onclick="inspectFlowNode('p2')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🟡</span>
+                <div class="flow-node__title-wrap">
+                  <span class="flow-node__title">P2: Deferred Science</span>
+                  <span class="flow-node__tag">SHEDDABLE-2</span>
+                </div>
+                <span class="flow-node__state-badge badge-active" id="p2-state-badge">ACTIVE</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-emerald" id="node-p2-kw">35.0 kW</span>
+                  <span class="flow-node__unit">Nominal 35 kW</span>
+                </div>
+                <div class="flow-node__meta" id="node-p2-meta">Lidar Mapping: 62.0% Complete</div>
+              </div>
+            </div>
+
+            <div class="flow-node flow-node--sink flow-node--p3" id="node-sink-p3" onclick="inspectFlowNode('p3')">
+              <div class="flow-node__header">
+                <span class="flow-node__icon">🟢</span>
+                <div class="flow-node__title-wrap">
+                  <span class="flow-node__title">P3: Station Comfort</span>
+                  <span class="flow-node__tag">SHEDDABLE-1</span>
+                </div>
+                <span class="flow-node__state-badge badge-active" id="p3-state-badge">ACTIVE</span>
+              </div>
+              <div class="flow-node__body">
+                <div class="flow-node__metric">
+                  <span class="flow-node__val text-emerald" id="node-p3-kw">20.0 kW</span>
+                  <span class="flow-node__unit">Nominal 20 kW</span>
+                </div>
+                <div class="flow-node__meta" id="node-p3-meta">Meso Compute: 41.2% Complete</div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -187,6 +588,10 @@
         <div class="priority-stat">
           <span class="priority-stat__label">Battery Support</span>
           <span class="priority-stat__value text-cyan" id="p-battery-support">0.0 kW</span>
+        </div>
+        <div class="priority-stat">
+          <span class="priority-stat__label">Research Progress</span>
+          <span class="priority-stat__value text-cyan" id="p-research-index">70.4% (3/3 Active)</span>
         </div>
       </div>
 

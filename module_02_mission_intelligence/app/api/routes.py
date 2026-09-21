@@ -138,6 +138,9 @@ async def get_priority_processes(station_id: str = Query(default="FROST-STATION-
             "criticality": "VITAL",
             "sla_requirement": "100% uptime, zero interruption allowed",
             "description": "Station oxygen generation, atmospheric pressure, and quarters survival heating",
+            "research_status": "CONTINUOUS_OPTIMAL",
+            "completion_pct": 100.0,
+            "milestone": "Zero Degradation · 100% Thermal Loop Locked",
         },
         {
             "process_id": "PROC-P1-ESSENTIAL-SCIENCE",
@@ -153,6 +156,9 @@ async def get_priority_processes(station_id: str = Query(default="FROST-STATION-
             "criticality": "HIGH",
             "sla_requirement": "Protected under normal & advisory states",
             "description": "Continuous high-resolution polar radar sweep & deep cryogenic sample freezer",
+            "research_status": "DRILLING_STAGE_4 / SAMPLING",
+            "completion_pct": 78.5,
+            "milestone": "Depth: 2,512m / 3,200m Target · -80°C Cryo Protected",
         },
         {
             "process_id": "PROC-P2-DEFERRED-RESEARCH",
@@ -168,6 +174,9 @@ async def get_priority_processes(station_id: str = Query(default="FROST-STATION-
             "criticality": "MEDIUM",
             "sla_requirement": "Can be paused/deferred during deficit > 20 kW",
             "description": "Meteorological balloon telemetry receiver and survey drone recharging docks",
+            "research_status": "SCAN_CYCLE_ACTIVE",
+            "completion_pct": 62.0,
+            "milestone": "Scan 31/50 Completed · Checkpoint Saved",
         },
         {
             "process_id": "PROC-P3-STATION-COMFORT",
@@ -183,6 +192,9 @@ async def get_priority_processes(station_id: str = Query(default="FROST-STATION-
             "criticality": "LOW",
             "sla_requirement": "First tier sheddable on any deficit",
             "description": "Non-essential gym, recreation facility heating, and aesthetic lighting",
+            "research_status": "BATCH_PROCESSING",
+            "completion_pct": 41.2,
+            "milestone": "Epoch 412 / 1000 · Checkpoint Stored",
         },
     ]
     total_demand_kw = sum(p["current_power_kw"] for p in processes)

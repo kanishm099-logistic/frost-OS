@@ -246,6 +246,9 @@ async def priority_dispatch(
             "status": "PROTECTED (100%)",
             "badge_color": "emerald",
             "can_shed": False,
+            "research_status": "CONTINUOUS_OPTIMAL",
+            "completion_pct": 100.0,
+            "milestone": "Zero Degradation · 100% Thermal Loop Locked",
         },
         {
             "process_id": "PROC-P1-ESSENTIAL-SCIENCE",
@@ -258,6 +261,9 @@ async def priority_dispatch(
             "status": "ACTIVE" if p1_shed == 0 else "BUFFERED / THROTTLED",
             "badge_color": "cyan",
             "can_shed": False,
+            "research_status": "DRILLING_STAGE_4 / SAMPLING" if p1_shed == 0 else "SAMPLING_THROTTLED",
+            "completion_pct": 78.5,
+            "milestone": "Depth: 2,512m / 3,200m Target · -80°C Cryo Protected",
         },
         {
             "process_id": "PROC-P2-DEFERRED-RESEARCH",
@@ -270,6 +276,9 @@ async def priority_dispatch(
             "status": "ACTIVE" if p2_shed == 0 else ("SHED" if p2_alloc == 0 else "THROTTLED"),
             "badge_color": "amber" if p2_shed > 0 else "blue",
             "can_shed": True,
+            "research_status": "SCAN_CYCLE_ACTIVE" if p2_shed == 0 else ("PAUSED (CHECKPOINT SAVED)" if p2_alloc == 0 else "PARTIAL_SCAN"),
+            "completion_pct": 62.0,
+            "milestone": "Scan 31/50 Completed · Checkpoint Saved",
         },
         {
             "process_id": "PROC-P3-STATION-COMFORT",
@@ -282,6 +291,9 @@ async def priority_dispatch(
             "status": "ACTIVE" if p3_shed == 0 else ("SHED" if p3_alloc == 0 else "THROTTLED"),
             "badge_color": "rose" if p3_shed > 0 else "slate",
             "can_shed": True,
+            "research_status": "BATCH_PROCESSING" if p3_shed == 0 else ("DEFERRED (IDLE)" if p3_alloc == 0 else "LOW_POWER_STANDBY"),
+            "completion_pct": 41.2,
+            "milestone": "Epoch 412 / 1000 · Checkpoint Stored",
         },
     ]
 

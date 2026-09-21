@@ -3,9 +3,116 @@
    Real-time monitoring with LIVE backend data from all 8 modules
    ═══════════════════════════════════════════════════════════════════════ */
 
-// ── Module Definitions ───────────────────────────────────────────────
-const STATION_ID = "FROST-STATION-ALPHA";
+// ── Polar Station Multi-Station Registry ────────────────────────────
+const STATION_REGISTRY = {
+  "POLAR-STATION-ALPHA": {
+    id: "POLAR-STATION-ALPHA",
+    name: "Station Alpha (McMurdo Coastal Sector)",
+    shortName: "STATION ALPHA",
+    coords: "77°51'S 166°40'E",
+    climate: "Coastal Katabatic (-25°C, 32 kts)",
+    defaultKey: "frost-alpha-2026",
+    temp: -25.0,
+    windSpeed: "32 kts",
+    windKw: 110.0,
+    solarKw: 85.0,
+    dieselKw: 0.0,
+    batteryKw: 25.0,
+    batterySoc: 65.0,
+    h2Kw: 0.0,
+    h2Pressure: "280 Bar",
+    reserveKwh: 980.0,
+    netBalance: "+60.0 kW (SURPLUS)",
+    p0: 45.0,
+    p1: 90.0,
+    p2: 35.0,
+    p3: 20.0,
+    desc: "Wind-dominant coastal microgrid with high bifacial solar albedo and 600 kWh BESS buffer."
+  },
+  "POLAR-STATION-BETA": {
+    id: "POLAR-STATION-BETA",
+    name: "Station Beta (Dome C Deep Ice Sheet)",
+    shortName: "STATION BETA",
+    coords: "75°06'S 123°20'E",
+    climate: "Deep Polar Plateau (-65°C)",
+    defaultKey: "frost-beta-2026",
+    temp: -65.0,
+    windSpeed: "14 kts",
+    windKw: 45.0,
+    solarKw: 140.0,
+    dieselKw: 0.0,
+    batteryKw: 15.0,
+    batterySoc: 78.0,
+    h2Kw: 35.0,
+    h2Pressure: "400 Bar",
+    reserveKwh: 1250.0,
+    netBalance: "+45.0 kW (SURPLUS)",
+    p0: 75.0,
+    p1: 65.0,
+    p2: 25.0,
+    p3: 15.0,
+    desc: "High-altitude deep freeze station with oversized solar arrays, 800 kWh BESS, and 400 Bar hydrogen storage."
+  },
+  "POLAR-STATION-GAMMA": {
+    id: "POLAR-STATION-GAMMA",
+    name: "Station Gamma (Svalbard High-Arctic Outpost)",
+    shortName: "STATION GAMMA",
+    coords: "78°13'N 15°38'E",
+    climate: "High Arctic Polar Night (-18°C, 45 kts)",
+    defaultKey: "frost-gamma-2026",
+    temp: -18.0,
+    windSpeed: "45 kts",
+    windKw: 160.0,
+    solarKw: 0.0,
+    dieselKw: 0.0,
+    batteryKw: 30.0,
+    batterySoc: 55.0,
+    h2Kw: 20.0,
+    h2Pressure: "220 Bar",
+    reserveKwh: 850.0,
+    netBalance: "+50.0 kW (SURPLUS)",
+    p0: 50.0,
+    p1: 55.0,
+    p2: 40.0,
+    p3: 25.0,
+    desc: "Gale-force fjord wind farm operating through continuous polar night with fuel cell baseload."
+  },
+  "POLAR-STATION-DELTA": {
+    id: "POLAR-STATION-DELTA",
+    name: "Station Delta (Amundsen-Scott South Pole)",
+    shortName: "STATION DELTA",
+    coords: "90°00'S 0°00'E",
+    climate: "South Pole High Plateau (-52°C, 2,835m)",
+    defaultKey: "frost-delta-2026",
+    temp: -52.0,
+    windSpeed: "22 kts",
+    windKw: 80.0,
+    solarKw: 90.0,
+    dieselKw: 0.0,
+    batteryKw: 20.0,
+    batterySoc: 82.0,
+    h2Kw: 0.0,
+    h2Pressure: "310 Bar",
+    reserveKwh: 1100.0,
+    netBalance: "+35.0 kW (SURPLUS)",
+    p0: 60.0,
+    p1: 110.0,
+    p2: 30.0,
+    p3: 15.0,
+    desc: "Cosmic ray and neutrino radar observatory with high-altitude battery conditioning and dual thermal loops."
+  }
+};
+
+let currentStationId = localStorage.getItem("frost_station_id") || "POLAR-STATION-ALPHA";
+let isAuthenticated = localStorage.getItem("frost_authenticated") === "true";
+
+function getStationId() {
+  return currentStationId;
+}
+
+const STATION_ID = currentStationId;
 const BASE_URL = "http://127.0.0.1";
+
 
 const MODULES = [
   {
@@ -122,7 +229,9 @@ let healthPollingInterval = null;
 // ── Initialization ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   initParticleCanvas();
+  initStationAuth();
   renderModuleCards();
+  initPowerFlowDiagram();
   startClock();
   pollAllModules();
   fetchPriorityProcessData(0);
@@ -1009,6 +1118,35 @@ function renderPriorityPanelUI(data) {
   if (shedEl) shedEl.textContent = `${(data.total_shed_kw || 0.0).toFixed(1)} kW`;
   if (battEl) battEl.textContent = `${(data.battery_support_kw || 0.0).toFixed(1)} kW`;
 
+  // Research Status Index Metric
+  const researchIdxEl = document.getElementById("p-research-index");
+  if (researchIdxEl) {
+    let totalPct = 0;
+    let count = 0;
+    let activeCount = 0;
+    (data.processes || []).forEach(p => {
+      if (p.tier !== "P0") {
+        count++;
+        const isShed = p.allocated_kw === 0 && p.nominal_kw > 0;
+        if (!isShed) activeCount++;
+        const comp = p.completion_pct != null ? p.completion_pct : (p.tier === "P1" ? 78.5 : (p.tier === "P2" ? 62.0 : 41.2));
+        totalPct += comp;
+      }
+    });
+    const avg = count > 0 ? (totalPct / count).toFixed(1) : "70.4";
+    researchIdxEl.textContent = `${avg}% (${activeCount}/${count} Active)`;
+    if (activeCount === count) {
+      researchIdxEl.className = "priority-stat__value text-emerald";
+    } else if (activeCount > 0) {
+      researchIdxEl.className = "priority-stat__value text-amber";
+    } else {
+      researchIdxEl.className = "priority-stat__value text-rose";
+    }
+  }
+
+  // Synchronize Microgrid Power Flow Diagram
+  updatePowerFlowFromPriorityData(data);
+
   // Safety Status Badge
   const safetyBadge = document.getElementById("priority-safety-verdict");
   const safetyText = document.getElementById("priority-safety-text");
@@ -1040,6 +1178,35 @@ function renderPriorityPanelUI(data) {
       else if (isShed) statusClass = "status-badge--shed";
       else if (isThrottled) statusClass = "status-badge--throttled";
 
+      // Derive research status, completion % and milestone
+      let researchStatus = proc.research_status;
+      let completionPct = proc.completion_pct;
+      let milestone = proc.milestone;
+
+      if (!researchStatus) {
+        if (proc.tier === "P0") {
+          researchStatus = "CONTINUOUS_OPTIMAL";
+          completionPct = 100.0;
+          milestone = "Zero Degradation · 100% Thermal Loop Locked";
+        } else if (proc.tier === "P1") {
+          researchStatus = isShed ? "HALTED (CRYOPRESERVED)" : (isThrottled ? "SAMPLING_THROTTLED" : "DRILLING_STAGE_4 / SAMPLING");
+          completionPct = 78.5;
+          milestone = "Depth: 2,512m / 3,200m Target · -80°C Cryo Protected";
+        } else if (proc.tier === "P2") {
+          researchStatus = isShed ? "PAUSED (CHECKPOINT SAVED)" : (isThrottled ? "PARTIAL_SCAN" : "SCAN_CYCLE_ACTIVE");
+          completionPct = 62.0;
+          milestone = "Scan 31/50 Completed · Checkpoint Saved";
+        } else if (proc.tier === "P3") {
+          researchStatus = isShed ? "DEFERRED (IDLE)" : (isThrottled ? "LOW_POWER_STANDBY" : "BATCH_PROCESSING");
+          completionPct = 41.2;
+          milestone = "Epoch 412 / 1000 · Checkpoint Stored";
+        }
+      }
+
+      let tagClass = "research-tag--active";
+      if (isShed) tagClass = "research-tag--paused";
+      else if (isThrottled) tagClass = "research-tag--throttled";
+
       const card = document.createElement("div");
       card.className = `priority-card priority-card--${proc.tier.toLowerCase()}${isShed ? " priority-card--shed" : ""}`;
       card.innerHTML = `
@@ -1054,11 +1221,26 @@ function renderPriorityPanelUI(data) {
             <div class="priority-card__power-val">${proc.allocated_kw.toFixed(1)} kW</div>
             <div class="priority-card__power-nom">Nominal: ${proc.nominal_kw.toFixed(1)} kW</div>
           </div>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;color:${pct === 100 ? '#34D399' : (pct === 0 ? '#F87171' : '#FBBF24')}">${pct}%</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;color:${pct === 100 ? '#34D399' : (pct === 0 ? '#F87171' : '#FBBF24')}">${pct}% Power</span>
         </div>
         <div class="priority-card__bar-wrap">
           <div class="priority-card__bar-fill bar-fill--${proc.tier}" style="width: ${pct}%;"></div>
         </div>
+
+        <!-- Research Status & Completion Row -->
+        <div class="priority-card__research-row">
+          <div class="research-status-meta">
+            <span class="research-status-label">${proc.tier === 'P0' ? 'Integrity' : 'Research'}:</span>
+            <span class="research-status-tag ${tagClass}">${researchStatus}</span>
+          </div>
+          <div class="research-completion-meta" title="Research Stage Completion">
+            ${completionPct !== undefined ? completionPct.toFixed(1) + '%' : '--'}
+          </div>
+        </div>
+        <div class="research-progress-bar-wrap" title="Completion Progress: ${completionPct || 0}%">
+          <div class="research-progress-bar-fill" style="width: ${completionPct || 0}%;"></div>
+        </div>
+        <div class="research-milestone-text">🎯 ${milestone || 'Stage in progress'}</div>
       `;
       grid.appendChild(card);
     });
@@ -1121,3 +1303,636 @@ function onDeficitSliderChange(val) {
 
   fetchPriorityProcessData(kw);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//   MICROGRID POWER FLOW TOPOLOGY CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════
+
+let currentFlowState = {
+  windKw: 110.0,
+  solarKw: 85.0,
+  dieselKw: 0.0,
+  batteryKw: 25.0, // positive = charging, negative = discharging
+  batterySoc: 65.0,
+  h2Kw: 0.0,
+  p0Kw: 45.0,
+  p1Kw: 90.0,
+  p2Kw: 35.0,
+  p3Kw: 20.0,
+  deficitKw: 0
+};
+
+function initPowerFlowDiagram() {
+  updatePowerFlowDiagram(currentFlowState);
+}
+
+function updatePowerFlowFromPriorityData(data) {
+  if (!data) return;
+
+  const deficit = data.deficit_kw || 0;
+  
+  // Calculate dynamic source and sink powers based on priority dispatch
+  let wind = 110.0;
+  let solar = 85.0;
+  let diesel = 0.0;
+  let battSupport = data.battery_support_kw || 0;
+  
+  // Model generation drop corresponding to simulated deficit
+  if (deficit > 0) {
+    solar = Math.max(15.0, 85.0 - (deficit * 0.6));
+    wind = Math.max(35.0, 110.0 - (deficit * 0.4));
+  }
+
+  // Sinks from process allocations if present
+  let p0 = 45.0;
+  let p1 = 90.0;
+  let p2 = 35.0;
+  let p3 = 20.0;
+
+  if (data.processes && Array.isArray(data.processes)) {
+    data.processes.forEach(p => {
+      if (p.tier === "P0") p0 = p.allocated_kw != null ? p.allocated_kw : p0;
+      if (p.tier === "P1") p1 = p.allocated_kw != null ? p.allocated_kw : p1;
+      if (p.tier === "P2") p2 = p.allocated_kw != null ? p.allocated_kw : p2;
+      if (p.tier === "P3") p3 = p.allocated_kw != null ? p.allocated_kw : p3;
+    });
+  } else {
+    if (deficit >= 20) p3 = 0.0;
+    if (deficit >= 55) p2 = 0.0;
+    if (deficit >= 100) p1 = 70.0;
+  }
+
+  // Battery flow:
+  // If we have deficit >= 55, battery discharges to support base
+  let batteryFlow = 25.0; // default charging
+  if (deficit === 0) {
+    batteryFlow = 25.0;
+  } else if (deficit <= 20) {
+    batteryFlow = 5.0;
+  } else if (deficit <= 55) {
+    batteryFlow = -15.0;
+  } else {
+    batteryFlow = battSupport > 0 ? -battSupport : -35.0;
+  }
+
+  currentFlowState = {
+    windKw: wind,
+    solarKw: solar,
+    dieselKw: diesel,
+    batteryKw: batteryFlow,
+    batterySoc: Math.max(20, 65.0 - (deficit * 0.15)),
+    h2Kw: 0.0,
+    p0Kw: p0,
+    p1Kw: p1,
+    p2Kw: p2,
+    p3Kw: p3,
+    deficitKw: deficit
+  };
+
+  updatePowerFlowDiagram(currentFlowState);
+}
+
+function updatePowerFlowDiagram(state) {
+  // 1. Update Node Texts & Badges
+  const windEl = document.getElementById("node-wind-kw");
+  const solarEl = document.getElementById("node-solar-kw");
+  const dieselEl = document.getElementById("node-diesel-kw");
+  const battEl = document.getElementById("node-battery-kw");
+  const battSocEl = document.getElementById("node-battery-soc");
+  const battMeterEl = document.getElementById("node-battery-meter");
+  const h2El = document.getElementById("node-h2-kw");
+  const busTotalEl = document.getElementById("bus-total-throughput");
+  const busSubtitle = document.getElementById("bus-flow-status");
+  const balanceBadge = document.getElementById("flow-balance-badge");
+  const netBalanceText = document.getElementById("flow-net-balance");
+
+  const p0El = document.getElementById("node-p0-kw");
+  const p1El = document.getElementById("node-p1-kw");
+  const p2El = document.getElementById("node-p2-kw");
+  const p3El = document.getElementById("node-p3-kw");
+
+  if (windEl) windEl.textContent = `${state.windKw.toFixed(1)} kW`;
+  if (solarEl) solarEl.textContent = `${state.solarKw.toFixed(1)} kW`;
+  if (dieselEl) dieselEl.textContent = `${state.dieselKw.toFixed(1)} kW`;
+
+  if (battEl) {
+    if (state.batteryKw >= 0) {
+      battEl.textContent = `+${state.batteryKw.toFixed(1)} kW`;
+      battEl.className = "flow-node__val text-emerald";
+    } else {
+      battEl.textContent = `${state.batteryKw.toFixed(1)} kW`;
+      battEl.className = "flow-node__val text-amber";
+    }
+  }
+
+  const battBadge = document.getElementById("battery-state-badge");
+  if (battBadge) {
+    if (state.batteryKw > 0) {
+      battBadge.textContent = "CHARGING";
+      battBadge.className = "flow-node__state-badge badge-active";
+    } else if (state.batteryKw < 0) {
+      battBadge.textContent = "DISCHARGE";
+      battBadge.className = "flow-node__state-badge badge-shed";
+    } else {
+      battBadge.textContent = "FLOAT";
+      battBadge.className = "flow-node__state-badge badge-standby";
+    }
+  }
+
+  if (battSocEl) battSocEl.textContent = `${state.batterySoc.toFixed(1)}%`;
+  if (battMeterEl) battMeterEl.style.width = `${Math.min(100, Math.max(0, state.batterySoc))}%`;
+
+  if (p0El) p0El.textContent = `${state.p0Kw.toFixed(1)} kW`;
+  if (p1El) p1El.textContent = `${state.p1Kw.toFixed(1)} kW`;
+  if (p2El) p2El.textContent = `${state.p2Kw.toFixed(1)} kW`;
+  if (p3El) p3El.textContent = `${state.p3Kw.toFixed(1)} kW`;
+
+  // Total Load & Throughput
+  const totalLoad = state.p0Kw + state.p1Kw + state.p2Kw + state.p3Kw;
+  const totalGen = state.windKw + state.solarKw + state.dieselKw;
+  if (busTotalEl) busTotalEl.textContent = `${totalLoad.toFixed(1)} kW`;
+
+  // Net Balance Badge
+  if (balanceBadge && netBalanceText) {
+    const net = totalGen - totalLoad;
+    if (net >= 0) {
+      balanceBadge.className = "flow-badge flow-badge--balance";
+      netBalanceText.textContent = `+${net.toFixed(1)} kW (SURPLUS)`;
+      if (busSubtitle) busSubtitle.textContent = "Surplus Directed to Storage";
+    } else {
+      balanceBadge.className = "flow-badge flow-badge--balance deficit";
+      netBalanceText.textContent = `${net.toFixed(1)} kW (DEFICIT)`;
+      if (busSubtitle) busSubtitle.textContent = "Deficit Balanced by BESS";
+    }
+  }
+
+  // 2. Manage Node Active / Shedded States
+  const nodeP2 = document.getElementById("node-sink-p2");
+  const p2Badge = document.getElementById("p2-state-badge");
+  if (nodeP2 && p2Badge) {
+    if (state.p2Kw === 0) {
+      nodeP2.classList.add("shedded");
+      p2Badge.textContent = "SHED (0 kW)";
+      p2Badge.className = "flow-node__state-badge badge-shed";
+    } else {
+      nodeP2.classList.remove("shedded");
+      p2Badge.textContent = "ACTIVE";
+      p2Badge.className = "flow-node__state-badge badge-active";
+    }
+  }
+
+  const nodeP3 = document.getElementById("node-sink-p3");
+  const p3Badge = document.getElementById("p3-state-badge");
+  if (nodeP3 && p3Badge) {
+    if (state.p3Kw === 0) {
+      nodeP3.classList.add("shedded");
+      p3Badge.textContent = "SHED (0 kW)";
+      p3Badge.className = "flow-node__state-badge badge-shed";
+    } else {
+      nodeP3.classList.remove("shedded");
+      p3Badge.textContent = "ACTIVE";
+      p3Badge.className = "flow-node__state-badge badge-active";
+    }
+  }
+
+  // Update Research Meta in Flow Diagram Sinks
+  const p0Meta = document.getElementById("node-p0-meta");
+  const p1Meta = document.getElementById("node-p1-meta");
+  const p2Meta = document.getElementById("node-p2-meta");
+  const p3Meta = document.getElementById("node-p3-meta");
+
+  if (p0Meta) p0Meta.textContent = "Life Support: 100% Locked · 0% Tol.";
+  if (p1Meta) {
+    p1Meta.textContent = state.p1Kw < 90.0 
+      ? "Cryo Throttled · 78.5% Stored" 
+      : "Cryo-Drilling: 78.5% Complete";
+  }
+  if (p2Meta) {
+    p2Meta.textContent = state.p2Kw === 0 
+      ? "Lidar Paused · 62.0% Checkpointed" 
+      : "Lidar Mapping: 62.0% Complete";
+  }
+  if (p3Meta) {
+    p3Meta.textContent = state.p3Kw === 0 
+      ? "Compute Deferred · 41.2% Checkpointed" 
+      : "Meso Compute: 41.2% Complete";
+  }
+
+  // 3. Update SVG Path Flow Line Animations & Speeds
+  const pathWind = document.getElementById("path-wind");
+  const pathSolar = document.getElementById("path-solar");
+  const pathDiesel = document.getElementById("path-diesel");
+  const pathBatt = document.getElementById("path-battery");
+  const pathH2 = document.getElementById("path-h2");
+  const pathP0 = document.getElementById("path-p0");
+  const pathP1 = document.getElementById("path-p1");
+  const pathP2 = document.getElementById("path-p2");
+  const pathP3 = document.getElementById("path-p3");
+
+  if (pathWind) {
+    pathWind.className = state.windKw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--idle";
+    pathWind.style.animationDuration = `${Math.max(0.6, 2.2 - (state.windKw / 80))}s`;
+  }
+
+  if (pathSolar) {
+    pathSolar.className = state.solarKw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--idle";
+    pathSolar.style.animationDuration = `${Math.max(0.6, 2.2 - (state.solarKw / 70))}s`;
+  }
+
+  if (pathDiesel) {
+    pathDiesel.className = state.dieselKw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--idle";
+  }
+
+  if (pathBatt) {
+    if (state.batteryKw > 0) {
+      // Flow INTO battery
+      pathBatt.className = "flow-line flow-line--active flow-line--reverse";
+      pathBatt.style.animationDuration = "1.4s";
+    } else if (state.batteryKw < 0) {
+      // Flow OUT OF battery to bus
+      pathBatt.className = "flow-line flow-line--active";
+      pathBatt.style.animationDuration = "0.9s";
+    } else {
+      pathBatt.className = "flow-line flow-line--idle";
+    }
+  }
+
+  if (pathP0) {
+    pathP0.className = "flow-line flow-line--active";
+  }
+
+  if (pathP1) {
+    pathP1.className = state.p1Kw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--shed";
+  }
+
+  if (pathP2) {
+    pathP2.className = state.p2Kw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--shed";
+  }
+
+  if (pathP3) {
+    pathP3.className = state.p3Kw > 0 ? "flow-line flow-line--active" : "flow-line flow-line--shed";
+  }
+}
+
+// ── Node Technical Inspector Modal ────────────────────────────────────
+const NODE_SPEC_DATA = {
+  wind: {
+    title: "Wind Turbine Cluster (WT-01 / WT-02)",
+    icon: "🌬️",
+    desc: "Arctic-rated horizontal axis wind turbine with blade electro-thermal deicing and active pitch control.",
+    specs: [
+      { label: "Rated Capacity", val: "120.0 kW per unit" },
+      { label: "Rotor Speed", val: "42.4 RPM" },
+      { label: "Wind Velocity", val: "14.2 m/s (27.6 kts)" },
+      { label: "Blade Ice Margin", val: "0.2 mm (SAFE)" },
+      { label: "Cut-Out Wind", val: "25.0 m/s (Storm)" },
+      { label: "Inverter Frequency", val: "50.02 Hz" }
+    ]
+  },
+  solar: {
+    title: "Bifacial Solar Photovoltaic Array",
+    icon: "☀️",
+    desc: "Ground-mount bifacial heterojunction panels utilizing snow-albedo reflection with heated snow-shedding tilt.",
+    specs: [
+      { label: "Installed Peak", val: "100.0 kWp" },
+      { label: "Irradiance (Front)", val: "680 W/m²" },
+      { label: "Albedo Gain (Back)", val: "+22.4%" },
+      { label: "Panel Temp", val: "-14.2°C" },
+      { label: "MPPT Efficiency", val: "99.1%" },
+      { label: "Snow Coverage", val: "0% (Defrosted)" }
+    ]
+  },
+  diesel: {
+    title: "Emergency Auxiliary Diesel Generator",
+    icon: "🛢️",
+    desc: "Cummins Tier-4 Final polar emergency generator. Maintained in pre-heated standby with auto-synchronizer.",
+    specs: [
+      { label: "Standby Capacity", val: "250.0 kW" },
+      { label: "Fuel Reserve", val: "14,800 Liters" },
+      { label: "Coolant Block Temp", val: "+55.0°C (Pre-warmed)" },
+      { label: "Auto-Start Time", val: "8.5 Seconds" },
+      { label: "Emissions Status", val: "0 g/h (OFF)" },
+      { label: "Target Fuel Burn", val: "0.0 L (100% Renewable)" }
+    ]
+  },
+  bus: {
+    title: "Central AC/DC Microgrid Distribution Bus",
+    icon: "⚡",
+    desc: "Synchronous 400V 3-phase AC bus backed by solid-state fast transfer switches (SSTS) and grid-forming inverters.",
+    specs: [
+      { label: "Bus Voltage", val: "400.2 V AC (RMS)" },
+      { label: "System Frequency", val: "50.00 Hz" },
+      { label: "Total Harmonic (THD)", val: "1.18%" },
+      { label: "Power Factor", val: "0.992" },
+      { label: "Bus Fault Current", val: "12.4 kA Max" },
+      { label: "Protection Mode", val: "Deterministic Solid-State" }
+    ]
+  },
+  battery: {
+    title: "BESS Containerized Battery Storage",
+    icon: "🔋",
+    desc: "Lithium Iron Phosphate (LiFePO4) energy storage in vacuum-insulated, HVAC-controlled polar shipping container.",
+    specs: [
+      { label: "Pack Capacity", val: "600.0 kWh" },
+      { label: "Available Energy", val: "390.0 kWh (65%)" },
+      { label: "Continuous C-Rate", val: "1.0 C (200 kW)" },
+      { label: "Internal Cell Temp", val: "+18.5°C" },
+      { label: "State of Health (SOH)", val: "98.4%" },
+      { label: "Protected Reserve", val: "180.0 kWh Floor" }
+    ]
+  },
+  h2: {
+    title: "Hydrogen Electrolyzer & Fuel Cell Array",
+    icon: "💧",
+    desc: "PEM electrolyzer seasonal hydrogen storage bank for multi-week polar night energy shifting.",
+    specs: [
+      { label: "Fuel Cell Output", val: "50.0 kW Peak" },
+      { label: "Storage Pressure", val: "280.0 Bar" },
+      { label: "Available H₂ Mass", val: "42.5 kg" },
+      { label: "Electrolyzer Power", val: "30.0 kW (Standby)" },
+      { label: "Round-Trip Efficiency", val: "58.5%" },
+      { label: "System State", val: "Pressurized Ready" }
+    ]
+  },
+  p0: {
+    title: "P0: Crew Life Support & Thermal Habitat",
+    icon: "🔴",
+    desc: "Station survival core: habitat air heating, oxygen generation, water melt tanks, and base hospital bay.",
+    specs: [
+      { label: "Priority Level", val: "P0 (ABSOLUTE NON-SHEDDABLE)" },
+      { label: "Base Habitat Power", val: "45.0 kW Continuous" },
+      { label: "Thermal Loop Temp", val: "+21.0°C" },
+      { label: "Oxygen Circulation", val: "100.0% Nominal" },
+      { label: "UPS Redundancy", val: "Dual N+1 Online" },
+      { label: "Veto Protection", val: "HARD M07 LOCK" }
+    ]
+  },
+  p1: {
+    title: "P1: Core Science & Cryogenic Laboratories",
+    icon: "🟠",
+    desc: "Mission-critical science: -80°C ice core archives, high-latitude ionospheric radar, and seismic arrays.",
+    specs: [
+      { label: "Priority Level", val: "P1 (PROTECTED SCIENCE)" },
+      { label: "Nominal Load", val: "90.0 kW" },
+      { label: "Cryo Freezer Temp", val: "-82.4°C" },
+      { label: "Radar Pulse Power", val: "40.0 kW Peak" },
+      { label: "Protected Reserve", val: "270.0 kWh Dedicated" },
+      { label: "Max Power Reduction", val: "15% Throttling Only" }
+    ]
+  },
+  p2: {
+    title: "P2: Deferred Science & Meteorology Docks",
+    icon: "🟡",
+    desc: "Secondary scientific activities: atmospheric lidar scanners, robotic weather drone recharging, spectrometer runs.",
+    specs: [
+      { label: "Priority Level", val: "P2 (DEFERRED SHEDDABLE)" },
+      { label: "Nominal Load", val: "35.0 kW" },
+      { label: "Current Allocation", val: "Dynamic / Auto-Shed" },
+      { label: "Shedding Trigger", val: "Deficit >= 55.0 kW" },
+      { label: "Data Integrity", val: "Auto-Saved on Shed" },
+      { label: "Restart Protocol", val: "Auto-Resume on Surplus" }
+    ]
+  },
+  p3: {
+    title: "P3: Station Comfort, Gym & Auxiliary HVAC",
+    icon: "🟢",
+    desc: "Non-critical comfort loads: recreation room heaters, exercise equipment HVAC, and architectural illumination.",
+    specs: [
+      { label: "Priority Level", val: "P3 (FIRST TIER SHEDDABLE)" },
+      { label: "Nominal Load", val: "20.0 kW" },
+      { label: "Shedding Trigger", val: "Deficit >= 20.0 kW" },
+      { label: "Current Status", val: "Dynamic" },
+      { label: "Comfort Margin", val: "Crew Quarters Unaffected" },
+      { label: "Shed Time to Impact", val: "> 4 Hours" }
+    ]
+  }
+};
+
+function inspectFlowNode(nodeId) {
+  const node = NODE_SPEC_DATA[nodeId];
+  if (!node) return;
+
+  const headerHtml = `
+    <h3><span>${node.icon}</span> ${node.title}</h3>
+    <p>${node.desc}</p>
+  `;
+
+  let specsHtml = '<div class="modal-specs-grid">';
+  node.specs.forEach(spec => {
+    specsHtml += `
+      <div class="modal-spec-item">
+        <div class="modal-spec-item__label">${spec.label}</div>
+        <div class="modal-spec-item__val">${spec.val}</div>
+      </div>
+    `;
+  });
+  specsHtml += '</div>';
+
+  openModal(headerHtml, specsHtml);
+}
+
+function openModal(headerHtml, bodyHtml) {
+  const overlay = document.getElementById("modal-overlay");
+  const header = document.getElementById("modal-header");
+  const body = document.getElementById("modal-body");
+
+  if (header) header.innerHTML = headerHtml;
+  if (body) body.innerHTML = bodyHtml;
+  if (overlay) overlay.classList.add("active");
+}
+
+function closeModal() {
+  const overlay = document.getElementById("modal-overlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+// Close on Escape key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//   POLAR STATION AUTHENTICATION & MULTI-STATION CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════
+
+let selectedGatewayStationId = currentStationId || "POLAR-STATION-ALPHA";
+
+function initStationAuth() {
+  const savedStation = localStorage.getItem("frost_station_id");
+  const authStatus = localStorage.getItem("frost_authenticated");
+
+  if (savedStation && STATION_REGISTRY[savedStation]) {
+    currentStationId = savedStation;
+    selectedGatewayStationId = savedStation;
+  }
+
+  if (authStatus === "true") {
+    // Already authenticated, hide gateway and load station
+    const gateway = document.getElementById("station-gateway");
+    if (gateway) gateway.classList.add("hidden");
+    loadStationDashboard(currentStationId);
+  } else {
+    // Show gateway
+    openStationGateway();
+  }
+}
+
+function selectGatewayStation(stationId) {
+  if (!STATION_REGISTRY[stationId]) return;
+  selectedGatewayStationId = stationId;
+
+  // Update card styles
+  document.querySelectorAll(".station-pick-card").forEach(card => {
+    card.classList.toggle("active", card.dataset.stationId === stationId);
+  });
+
+  // Update form inputs
+  const stationInput = document.getElementById("gw-station-id");
+  if (stationInput) stationInput.value = stationId;
+
+  const hintCode = document.getElementById("hint-key-code");
+  if (hintCode) hintCode.textContent = STATION_REGISTRY[stationId].defaultKey;
+
+  // Clear previous error
+  const errMsg = document.getElementById("gateway-error-msg");
+  if (errMsg) errMsg.style.display = "none";
+}
+
+function autofillCurrentStationKey() {
+  const station = STATION_REGISTRY[selectedGatewayStationId];
+  if (!station) return;
+  const pwdInput = document.getElementById("gw-password");
+  if (pwdInput) {
+    pwdInput.value = station.defaultKey;
+    pwdInput.focus();
+  }
+}
+
+function toggleGatewayPasswordVisibility() {
+  const pwdInput = document.getElementById("gw-password");
+  const icon = document.getElementById("pwd-toggle-icon");
+  if (!pwdInput) return;
+  if (pwdInput.type === "password") {
+    pwdInput.type = "text";
+    if (icon) icon.textContent = "🔒";
+  } else {
+    pwdInput.type = "password";
+    if (icon) icon.textContent = "👁️";
+  }
+}
+
+function handleGatewayLogin(e) {
+  if (e) e.preventDefault();
+  const station = STATION_REGISTRY[selectedGatewayStationId];
+  const pwdInput = document.getElementById("gw-password");
+  const errMsg = document.getElementById("gateway-error-msg");
+  const enteredPassword = pwdInput ? pwdInput.value.trim() : "";
+
+  if (!station) return;
+
+  // Validate password (checks default key)
+  if (enteredPassword !== station.defaultKey) {
+    if (errMsg) {
+      errMsg.textContent = `Invalid access key for ${station.shortName}. Use default key: ${station.defaultKey}`;
+      errMsg.style.display = "block";
+    }
+    return;
+  }
+
+  // Authentication succeeded!
+  currentStationId = selectedGatewayStationId;
+  localStorage.setItem("frost_station_id", currentStationId);
+  localStorage.setItem("frost_authenticated", "true");
+  localStorage.setItem("frost_auth_time", Date.now().toString());
+
+  // Close gateway and load station
+  const gateway = document.getElementById("station-gateway");
+  if (gateway) gateway.classList.add("hidden");
+
+  loadStationDashboard(currentStationId);
+}
+
+function openStationGateway() {
+  const gateway = document.getElementById("station-gateway");
+  if (gateway) {
+    gateway.classList.remove("hidden");
+    selectGatewayStation(currentStationId);
+    const pwdInput = document.getElementById("gw-password");
+    if (pwdInput) {
+      pwdInput.value = "";
+      pwdInput.focus();
+    }
+  }
+}
+
+function logoutStation() {
+  localStorage.removeItem("frost_authenticated");
+  openStationGateway();
+}
+
+function loadStationDashboard(stationId) {
+  const station = STATION_REGISTRY[stationId];
+  if (!station) return;
+
+  console.log(`[FROST-OS] Loading station dashboard for: ${station.name}`);
+
+  // 1. Update Topbar
+  const nameEl = document.getElementById("topbar-station-name");
+  const coordsEl = document.getElementById("topbar-station-coords");
+  const statusEl = document.getElementById("station-status-text");
+
+  if (nameEl) nameEl.textContent = station.shortName;
+  if (coordsEl) coordsEl.textContent = station.coords;
+  if (statusEl) statusEl.textContent = "ONLINE";
+
+  // 2. Update Metrics Bar
+  const tempEl = document.getElementById("ambient-temp");
+  const reserveEl = document.getElementById("reserve-kwh");
+  const batteryEl = document.getElementById("battery-soc");
+  const netEl = document.getElementById("energy-balance");
+
+  if (tempEl) tempEl.textContent = `${station.temp.toFixed(1)}°C`;
+  if (reserveEl) reserveEl.textContent = `${station.reserveKwh.toFixed(0)} kWh`;
+  if (batteryEl) batteryEl.textContent = `${station.batterySoc.toFixed(1)}%`;
+  if (netEl) netEl.textContent = `${(station.windKw + station.solarKw - (station.p0 + station.p1 + station.p2 + station.p3)).toFixed(1)} kW`;
+
+  // 3. Update Power Flow State
+  currentFlowState = {
+    windKw: station.windKw,
+    solarKw: station.solarKw,
+    dieselKw: station.dieselKw,
+    batteryKw: station.batteryKw,
+    batterySoc: station.batterySoc,
+    h2Kw: station.h2Kw,
+    p0Kw: station.p0,
+    p1Kw: station.p1,
+    p2Kw: station.p2,
+    p3Kw: station.p3,
+    deficitKw: 0
+  };
+
+  updatePowerFlowDiagram(currentFlowState);
+
+  // 4. Update Priority Panel Default Demands
+  const nomEl = document.getElementById("p-nominal-demand");
+  const allocEl = document.getElementById("p-allocated-power");
+  const defEl = document.getElementById("p-current-deficit");
+  const shedEl = document.getElementById("p-total-shed");
+  const totalStationDemand = station.p0 + station.p1 + station.p2 + station.p3;
+
+  if (nomEl) nomEl.textContent = `${totalStationDemand.toFixed(1)} kW`;
+  if (allocEl) allocEl.textContent = `${totalStationDemand.toFixed(1)} kW`;
+  if (defEl) defEl.textContent = "0.0 kW";
+  if (shedEl) shedEl.textContent = "0.0 kW";
+
+  // Reset deficit slider to 0
+  const slider = document.getElementById("deficit-slider");
+  const sliderVal = document.getElementById("deficit-slider-val");
+  if (slider) slider.value = 0;
+  if (sliderVal) sliderVal.textContent = "0 kW";
+  document.querySelectorAll(".priority-controls__presets .btn--preset").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.deficit === "0");
+  });
+}
+
+
